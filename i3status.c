@@ -250,6 +250,11 @@ int main(int argc, char *argv[]) {
                 CFG_END()
         };
 
+        cfg_opt_t memory_opts[] = {
+                CFG_STR("format", "%free", CFGF_NONE),
+                CFG_END()
+        };
+        
         cfg_opt_t volume_opts[] = {
                 CFG_STR("format", "♪: %volume", CFGF_NONE),
                 CFG_STR("device", "default", CFGF_NONE),
@@ -273,6 +278,7 @@ int main(int argc, char *argv[]) {
                 CFG_SEC("ddate", ddate_opts, CFGF_NONE),
                 CFG_SEC("load", load_opts, CFGF_NONE),
                 CFG_SEC("cpu_usage", usage_opts, CFGF_NONE),
+                CFG_SEC("memory", memory_opts, CFGF_TITLE | CFGF_MULTI),
                 CFG_END()
         };
 
@@ -427,6 +433,12 @@ int main(int argc, char *argv[]) {
                         CASE_SEC_TITLE("disk") {
                                 SEC_OPEN_MAP("disk_info");
                                 print_disk_info(json_gen, buffer, title, cfg_getstr(sec, "format"));
+                                SEC_CLOSE_MAP;
+                        }
+
+                        CASE_SEC_TITLE("memory") {
+                                SEC_OPEN_MAP("memory");
+                                print_memory_info(json_gen, buffer, title, cfg_getstr(sec, "format"));
                                 SEC_CLOSE_MAP;
                         }
 

@@ -10,6 +10,7 @@ enum { O_DZEN2, O_XMOBAR, O_I3BAR, O_NONE } output_format;
 #include <yajl/yajl_version.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdint.h>
 
 #define BEGINS_WITH(haystack, needle) (strncmp(haystack, needle, strlen(needle)) == 0)
 #define max(a, b) ((a) > (b) ? (a) : (b))
@@ -122,6 +123,8 @@ enum { O_DZEN2, O_XMOBAR, O_I3BAR, O_NONE } output_format;
 
 typedef enum { CS_DISCHARGING, CS_CHARGING, CS_FULL } charging_status_t;
 
+typedef enum { MT_RAM, MT_SWAP } memory_type_t;
+
 /* src/general.c */
 char *skip_character(char *input, char character, int amount);
 void die(const char *fmt, ...);
@@ -134,6 +137,9 @@ char *endcolor() __attribute__ ((pure));
 
 /* src/auto_detect_format.c */
 char *auto_detect_format();
+
+/* src/print_bytes_human.c */
+int print_bytes_human(char *outwalk, uint64_t bytes);
 
 void print_ipv6_info(yajl_gen json_gen, char *buffer, const char *format_up, const char *format_down);
 void print_disk_info(yajl_gen json_gen, char *buffer, const char *path, const char *format);
@@ -148,6 +154,7 @@ void print_cpu_usage(yajl_gen json_gen, char *buffer, const char *format);
 void print_eth_info(yajl_gen json_gen, char *buffer, const char *interface, const char *format_up, const char *format_down);
 void print_load(yajl_gen json_gen, char *buffer, const char *format);
 void print_volume(yajl_gen json_gen, char *buffer, const char *fmt, const char *device, const char *mixer, int mixer_idx);
+void print_memory_info(yajl_gen json_gen, char *buffer, const char *title, const char *format);
 bool process_runs(const char *path);
 
 /* socket file descriptor for general purposes */

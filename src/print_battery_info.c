@@ -37,17 +37,21 @@ void print_battery_info(yajl_gen json_gen, char *buffer, int number, const char 
         char percentagebuf[16];
         char remainingbuf[256];
         char emptytimebuf[256];
+        char consumptionbuf[256];
         const char *walk, *last;
         char *outwalk = buffer;
         int full_design = -1,
             remaining = -1,
-            present_rate = -1;
+            present_rate = -1,
+            voltage = -1,
+            current = -1;
         charging_status_t status = CS_DISCHARGING;
 
         memset(statusbuf, '\0', sizeof(statusbuf));
         memset(percentagebuf, '\0', sizeof(percentagebuf));
         memset(remainingbuf, '\0', sizeof(remainingbuf));
         memset(emptytimebuf, '\0', sizeof(emptytimebuf));
+        memset(consumptionbuf, '\0', sizeof(consumptionbuf));
 
         INSTANCE(path);
 
@@ -72,7 +76,9 @@ void print_battery_info(yajl_gen json_gen, char *buffer, int number, const char 
                     BEGINS_WITH(last, "POWER_SUPPLY_CHARGE_NOW"))
                         remaining = atoi(walk+1);
                 else if (BEGINS_WITH(last, "POWER_SUPPLY_CURRENT_NOW"))
-                        present_rate = atoi(walk+1);
+                        current = atoi(walk+1);
+                else if (BEGINS_WITH(last, "POWER_SUPPLY_VOLTAGE_NOW"))
+                        voltage = atoi(walk+1);
                 else if (BEGINS_WITH(last, "POWER_SUPPLY_POWER_NOW"))
                         present_rate = atoi(walk+1);
                 else if (BEGINS_WITH(last, "POWER_SUPPLY_STATUS=Charging"))
@@ -94,6 +100,10 @@ void print_battery_info(yajl_gen json_gen, char *buffer, int number, const char 
                         full_design = atoi(walk+1);
                 }
         }
+
+        /* on some systems POWER_SUPPLY_POWER_NOW does not exist, so we have to calculate it */
+        if (present_rate == -1)
+                present_rate = ((float)voltage / 1000.0) * ((float)current / 1000.0);
 
         if ((full_design == -1) || (remaining == -1)) {
                 OUTPUT_FULL_TEXT("No battery");
@@ -121,7 +131,7 @@ void print_battery_info(yajl_gen json_gen, char *buffer, int number, const char 
                 minutes = seconds / 60;
                 seconds -= (minutes * 60);
 
-                if (threshold > 0 && seconds_remaining < 60 * threshold)
+                if (status == CS_DISCHARGING && threshold > 0 && seconds_remaining < 60 * threshold)
                         START_COLOR("color_bad");
 
                 (void)snprintf(remainingbuf, sizeof(remainingbuf), "%02d:%02d:%02d",
@@ -133,6 +143,9 @@ void print_battery_info(yajl_gen json_gen, char *buffer, int number, const char 
 
                 (void)snprintf(emptytimebuf, sizeof(emptytimebuf), "%02d:%02d:%02d",
                         max(empty_tm->tm_hour, 0), max(empty_tm->tm_min, 0), max(empty_tm->tm_sec, 0));
+
+                (void)snprintf(consumptionbuf, sizeof(consumptionbuf), "%1.2fW",
+                        ((float)present_rate / 1000.0 / 1000.0));
 
                 END_COLOR;
         }
@@ -249,6 +262,9 @@ void print_battery_info(yajl_gen json_gen, char *buffer, int number, const char 
                 } else if (strncmp(walk+1, "emptytime", strlen("emptytime")) == 0) {
                         outwalk += sprintf(outwalk, "%s", emptytimebuf);
                         walk += strlen("emptytime");
+                } else if (strncmp(walk+1, "consumption", strlen("consumption")) == 0) {
+                        outwalk += sprintf(outwalk, "%s", consumptionbuf);
+                        walk += strlen("consumptionbuf");
                 }
         }
 
